@@ -20,3 +20,6 @@ def verify_otp(user_id, otp):
 
     totp = pyotp.TOTP(secret)
     return totp.verify(otp)
+
+def delete_otp(user_id):
+    cache.delete(f'otp_secret_{user_id}')
