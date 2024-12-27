@@ -7,4 +7,4 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = '__all__'
-        read_only = ('created_date', 'updated_date')
+        read_only = ('created_date', 'updated_date', 'slug')
