@@ -3,7 +3,7 @@ from rest_framework import serializers
 from tasks.models import Task, Tag
 
 
-class TaskSerializer(serializers.ModelSerializer):
+class CreateTaskSerializer(serializers.ModelSerializer):
     tags = serializers.CharField(required=False)
 
     class Meta:
@@ -22,7 +22,7 @@ class TaskSerializer(serializers.ModelSerializer):
 
         return task
 
-class TaskDetailSerializer(serializers.ModelSerializer):
+class ResponseTaskSerializer(serializers.ModelSerializer):
     tags = serializers.StringRelatedField(many=True)
 
     class Meta:
