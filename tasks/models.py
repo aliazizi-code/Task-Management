@@ -31,7 +31,7 @@ class Task(models.Model):
     slug = models.SlugField(max_length=100, unique=True, editable=False)
     description = models.TextField(blank=True, null=True)
     status = models.CharField(choices=Status.choices, default=Status.in_progress, max_length=100)
-    tags = models.ManyToManyField(Tag, blank=True)
+    tags = models.ManyToManyField(Tag, blank=False, related_name='tasks')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
