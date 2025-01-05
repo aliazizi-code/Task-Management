@@ -1,4 +1,5 @@
 from django.core.cache import cache
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
@@ -6,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from tasks.models import Task
-from tasks.serializers import CreateTaskSerializer, ResponseTaskSerializer
+from tasks.serializers import TaskCreateUpdateSerializer, ResponseTaskSerializer
 
 
 class ListPagination(PageNumberPagination):
@@ -46,7 +47,7 @@ class TaskViewSet(ViewSet):
         return Response(tasks)
 
     def create(self, request):
-        serializer = CreateTaskSerializer(data=request.data, partial=True)
+        serializer = TaskCreateUpdateSerializer(data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save(user=request.user)
             cache.delete('tasks_list')
@@ -55,9 +56,21 @@ class TaskViewSet(ViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, slug=None):
-        queryset = Task.objects.filter(slug=slug, user=request.user).prefetch_related('tags').first()
-        serializer = ResponseTaskSerializer(queryset)
+        queryset = Task.objects.prefetch_related('tags').filter(user=request.user)
+        task = get_object_or_404(queryset, slug=slug)
+
+        serializer = ResponseTaskSerializer(task)
 
         return Response(serializer.data)
 
+    def partial_update(self, request, slug=None):
+        queryset = Task.objects.prefetch_related('tags').filter(user=request.user)
+        task = get_object_or_404(queryset, slug=slug)
 
+        serializer = TaskCreateUpdateSerializer(task, data=request.data, partial=True)
+        if serializer.is_valid():
+            updated_task = serializer.save()
+            cache.delete('tasks_list')
+            return Response(ResponseTaskSerializer(updated_task).data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
