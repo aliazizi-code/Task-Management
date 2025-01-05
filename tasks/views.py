@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from tasks.models import Task
-from tasks.serializers import TaskSerializer
+from tasks.serializers import TaskSerializer, TaskDetailSerializer
 
 
 class ListPagination(PageNumberPagination):
@@ -27,6 +27,7 @@ class ListPagination(PageNumberPagination):
 class TaskViewSet(ViewSet):
     pagination_class = ListPagination
     permission_classes = (IsAuthenticated,)
+    lookup_field = 'slug'
 
     def list(self, request):
         queryset = Task.objects.all()
@@ -47,3 +48,9 @@ class TaskViewSet(ViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, slug=None):
+        queryset = Task.objects.filter(slug=slug, user=request.user).prefetch_related('tags').first()
+        serializer = TaskDetailSerializer(queryset)
+
+        return Response(serializer.data)
