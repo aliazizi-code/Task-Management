@@ -21,3 +21,10 @@ class TaskSerializer(serializers.ModelSerializer):
                 task.tags.add(tag)
 
         return task
+
+class TaskDetailSerializer(serializers.ModelSerializer):
+    tags = serializers.StringRelatedField(many=True)
+
+    class Meta:
+        model = Task
+        fields = ['title', 'description', 'status', 'tags']
