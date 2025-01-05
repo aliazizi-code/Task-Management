@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
@@ -5,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from tasks.models import Task
-from tasks.serializers import TaskSerializer, TaskDetailSerializer
+from tasks.serializers import CreateTaskSerializer, ResponseTaskSerializer
 
 
 class ListPagination(PageNumberPagination):
@@ -30,27 +31,33 @@ class TaskViewSet(ViewSet):
     lookup_field = 'slug'
 
     def list(self, request):
-        queryset = Task.objects.all()
+        tasks = cache.get('tasks_list')
+        if tasks is None:
+            queryset = Task.objects.all()
+            serializer = ResponseTaskSerializer(queryset, many=True)
+            tasks = serializer.data
+            cache.set('tasks_list', tasks, timeout=60 * 10)
 
         paginator = self.pagination_class()
-        page = paginator.paginate_queryset(queryset, request)
+        page = paginator.paginate_queryset(tasks, request)
         if page is not None:
-            serializer = TaskSerializer(page, many=True)
-            return paginator.get_paginated_response(serializer.data)
+            return paginator.get_paginated_response(page)
 
-        serializer = TaskSerializer(queryset, many=True)
-        return Response(serializer.data)
+        return Response(tasks)
 
     def create(self, request):
-        serializer = TaskSerializer(data=request.data, partial=True)
+        serializer = CreateTaskSerializer(data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save(user=request.user)
+            cache.delete('tasks_list')
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, slug=None):
         queryset = Task.objects.filter(slug=slug, user=request.user).prefetch_related('tags').first()
-        serializer = TaskDetailSerializer(queryset)
+        serializer = ResponseTaskSerializer(queryset)
 
         return Response(serializer.data)
+
+
