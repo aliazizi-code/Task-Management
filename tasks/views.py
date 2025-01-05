@@ -74,3 +74,11 @@ class TaskViewSet(ViewSet):
             return Response(ResponseTaskSerializer(updated_task).data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, slug=None):
+        queryset = Task.objects.prefetch_related('tags').filter(user=request.user)
+        task = get_object_or_404(queryset, slug=slug)
+
+        task.delete()
+        cache.delete('tasks_list')
+        return Response(status=status.HTTP_204_NO_CONTENT)
