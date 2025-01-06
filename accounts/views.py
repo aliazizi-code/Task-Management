@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -12,6 +13,16 @@ from .serializers import UserSerializer, VerifyOTPRequestSerializer
 class GenerateOTPView(APIView):
     serializer_class = UserSerializer
 
+    @extend_schema(
+        request=UserSerializer,
+        responses={
+            200: {'description': 'OTP sent successfully'},
+            201: {'description': 'User created and OTP sent'},
+            400: {'description': 'Invalid request data'}
+        },
+        summary='Generate OTP for user',
+        description='This endpoint generates an OTP for the user based on the provided phone number. If the user does not exist, a new user is created.'
+    )
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
 
@@ -34,6 +45,16 @@ class GenerateOTPView(APIView):
 class VerifyOTPView(APIView):
     serializer_class = VerifyOTPRequestSerializer
 
+    @extend_schema(
+        request=UserSerializer,
+        responses={
+            200: {'description': 'Login successful', 'examples': {'application/json': {'message': 'Login successful'}}},
+            401: {'description': 'Invalid OTP'},
+            400: {'description': 'Invalid request data'}
+        },
+        summary='Login user with OTP verification',
+        description='This endpoint verifies the user\'s OTP and logs the user in if the OTP is valid. A user must provide their phone number and the OTP received.'
+    )
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
 
